@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-const { describe, it } = require('mocha');
 
 // Placeholder test cases for the issuance flow — stubbed out ahead of
 // Kartik's real contract skeleton (Week 3) so the test plan is visible and
