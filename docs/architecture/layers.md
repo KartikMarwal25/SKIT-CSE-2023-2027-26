@@ -42,7 +42,8 @@ Three dependency rules are enforced today (by code review and, for D3/D4, by an 
   updating the column itself — the single-writer rule that makes the certificate lifecycle state
   model (see `docs/architecture/certificate-lifecycle.md`) actually trustworthy: there is exactly
   one place in the codebase that can put a certificate into an invalid state, so that's the one
-  place that needs to be reviewed for state-machine correctness.
+  place that needs to be reviewed for state-machine correctness. See ADR-009 for the full
+  rationale.
 
 Further dependency rules will be added here as the corresponding layers/boundaries are built out
 in later weeks — this list reflects what's actually enforced as of Week 1, not a target list
@@ -53,3 +54,6 @@ written in advance of the code that would enforce it.
 - `docs/adr/ADR-011-stack-choice.md` — the stack decision this layering is built on (notably, why
   D3 exists: no ORM means the `pg`-confinement rule is what keeps raw SQL from leaking everywhere).
 - `docs/architecture/certificate-lifecycle.md` — the state model that D5 protects.
+- `docs/adr/ADR-008-worker-singleton.md` — why the worker (a primary caller of `lifecycleService`)
+  runs as a single process.
+- `docs/adr/ADR-009-lifecycle-single-writer.md` — the full rationale behind rule D5.
