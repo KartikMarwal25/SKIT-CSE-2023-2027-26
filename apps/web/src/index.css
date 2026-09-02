@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Design tokens — placeholders pending brand finalisation (per this week's
+   task); real values land once the design system is reviewed properly. */
+@theme {
+  --spacing: 1px;
+  --color-brand: #1a365d;
+  --color-ink: #0f172a;
+  --color-paper: #ffffff;
+}
