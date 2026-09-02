@@ -1,0 +1,17 @@
+{
+  "name": "securecred-contracts",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "ganache": "ganache --port 7545 --deterministic"
+  },
+  "devDependencies": {
+    "hardhat": "^2.22.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "chai": "^4.4.0",
+    "mocha": "^10.4.0",
+    "ganache": "^7.9.0"
+  }
+}
