@@ -92,6 +92,7 @@ export default [
       'apps/api/src/container.js',
       'apps/worker/src/worker.js',
       'apps/api/src/adapters/chain.adapter.js',
+      'apps/api/src/repositories/**',
     ],
     rules: {
       'no-restricted-imports': [
