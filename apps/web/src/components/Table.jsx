@@ -20,7 +20,7 @@ export function Table({ columns, rows }) {
           <tr key={row.id ?? i} className="border-b border-edge">
             {columns.map((col) => (
               <td key={col.key} className="px-12 py-8 text-body">
-                {row[col.key]}
+                {col.render ? col.render(row) : row[col.key]}
               </td>
             ))}
           </tr>
