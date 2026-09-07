@@ -1,6 +1,6 @@
 # Certificate Endpoints — Design (FR-ISS)
 
-Design pass ahead of implementation (Week 4). Two endpoints this week: creation and retrieval.
+Design pass ahead of implementation. Two endpoints: creation and retrieval.
 
 ## POST /api/v1/certificates
 
@@ -18,7 +18,18 @@ Creates a new certificate issuance request. Requires an authenticated institutio
 | `course` | string | yes | Programme name. |
 | `gradeOrResult` | string | no | Optional — not every credential type has a grade. |
 | `issueDate` | string (ISO date) | yes | Cannot be in the future. |
-| `attributes` | object | no | Free-form extra fields, folded into the document and its hash. |
+| `attributes` | object | no | Extra fields folded into the document and its hash — shape depends on `certificateType` (see below), not free-form. |
+
+### Per-type `attributes` shape (Week 4)
+
+Each `certificateType` only accepts its own attribute keys — an unrecognised key for that type is a
+`400`, not silently dropped or stored:
+
+| `certificateType` | Allowed `attributes` keys |
+|---|---|
+| `DEGREE` | `cgpa` (number, 0-10), `honours` (boolean) |
+| `DIPLOMA` | `grade` (string) |
+| `COURSE_COMPLETION` | `durationHours` (positive number) |
 
 **Response — `202 Accepted`** (issuance is async: storage and on-chain anchoring both take time):
 
@@ -34,7 +45,9 @@ Creates a new certificate issuance request. Requires an authenticated institutio
 
 The response does not include a transaction hash or on-chain confirmation — those don't exist yet
 at the moment this responds. A caller checks progress via a separate status endpoint (out of scope
-for this week's design).
+for this week's design). As of Week 4 this endpoint validates the request body and responds `501`
+on anything that passes validation — the write path itself lands with the L3/L4 service layer
+(Week 6).
 
 ## GET /api/v1/certificates/:id
 
@@ -74,12 +87,19 @@ Every non-2xx response uses the same envelope, regardless of which endpoint:
 }
 ```
 
+A `400` from `POST /certificates` additionally carries a `fields` array — one entry per failing
+field, `{ "path": "attributes.cgpa", "message": "..." }` — so the form can show errors inline
+rather than a single generic banner.
+
 - `404` — the certificate doesn't exist, or the caller isn't allowed to see it (deliberately the
   same response either way — a 403 for someone else's certificate would leak that the ID is real).
-- `400` — malformed request body (missing/wrong-typed field).
+- `400` — malformed request body (missing/wrong-typed field, or an attribute that doesn't belong to
+  the given `certificateType`).
 - `401` — no valid auth.
 
 ## See also
 
-- `contracts/src/SecureCredRegistry.sol` (Kartik, this week) — `certificateHash` and `ipfsCid` in
-  the response above map directly to that contract's `Certificate` struct fields.
+- `contracts/src/SecureCredRegistry.sol` (Kartik, Week 3) — `certificateHash` and `ipfsCid` in the
+  response above map directly to that contract's `Certificate` struct fields.
+- `packages/shared/src/schemas.js` (Week 4) — `issuanceRequestSchema` is the enforceable version of
+  the request-body table above, shared between the API and the web client.
