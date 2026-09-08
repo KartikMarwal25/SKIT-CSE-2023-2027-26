@@ -1,10 +1,24 @@
 @import "tailwindcss";
 
-/* Design tokens — placeholders pending brand finalisation (per this week's
-   task); real values land once the design system is reviewed properly. */
+/* Design tokens — placeholders pending brand finalisation; real values land
+   once the design system is reviewed properly. Extended this week to cover
+   every utility already in use across the built components (form error
+   states, status badges, empty states) — several were referenced since
+   Week 2/3 without a token behind them, so Tailwind was silently generating
+   no rule for them. */
 @theme {
   --spacing: 1px;
   --color-brand: #1a365d;
   --color-ink: #0f172a;
   --color-paper: #ffffff;
+  --color-body: #1e293b;
+  --color-faint: #64748b;
+  --color-surface: #f1f5f9;
+  --color-edge: #cbd5e1;
+  --color-edge-ctl: #94a3b8;
+  --color-line: #cbd5e1;
+  --color-ok: #15803d;
+  --color-ok-bg: #dcfce7;
+  --color-bad: #b91c1c;
+  --color-bad-bg: #fee2e2;
 }
