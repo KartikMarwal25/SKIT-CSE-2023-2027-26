@@ -10,9 +10,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    defaults:
-        run:
-          working-directory: contracts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
