@@ -16,55 +16,46 @@ sessions is more useful than a network that resets every test run (e.g. manually
 contract state with a wallet UI while developing). Both run the test suite identically; which one
 a given `hardhat test --network <name>` run uses is just a flag.
 
-## Issuance flow test plan (Week 3)
+## Issuance flow test plan
 
-Kartik's Week 3 skeleton (`contracts/src/SecureCredRegistry.sol`) defines the surface this plan
-tests against:
+Kartik's Week 5 contract (`contracts/src/SecureCredRegistry.sol`) now actually writes to the
+`certificates` mapping and emits an event, so this plan's "1. Valid issuance" section is real as of
+this week — see `contracts/test/placeholder.issuance.test.js`.
 
-```solidity
-function issueCertificate(bytes32 certificateHash, string calldata ipfsCid) external {
-    // TODO(Week 4-6): access control, write to `certificates`, emit event.
-}
-```
-
-The function body is a stub — nothing writes to the `certificates` mapping yet, no event fires,
-and there is no access-control check. Nothing here is runnable against real assertions until that
-TODO lands. This document is the **plan**: the concrete cases each of Kavish's Week 2
-`it.skip` placeholders in `contracts/test/placeholder.issuance.test.js` will become once the write
-path exists, organised under the three areas named in this week's task.
-
-### 1. Valid issuance
+### 1. Valid issuance — DONE (Week 5)
 
 | # | Case | Expected behaviour |
 |---|---|---|
 | 1 | Call `issueCertificate(hash, cid)` with a fresh `hash` | Call does not revert |
 | 2 | Read back `certificates(hash)` after issuance | Returns `certificateHash == hash`, `ipfsCid == cid`, `issuer == msg.sender`, `issuedAt == block.timestamp` |
-| 3 | Read back `certificates(hash).status` after issuance | **Open question for Kartik** — the TODO doesn't yet say which `CertificateStatus` a fresh issuance starts in. Plan assumes `PENDING_STORAGE` (first enum value) pending confirmation. |
-| 4 | Issuance event | **Open question** — no event is declared on the contract yet. Plan assumes a `CertificateIssued(bytes32 indexed certificateHash, address indexed issuer, string ipfsCid, uint256 issuedAt)` event once added; test asserts `.to.emit(registry, 'CertificateIssued').withArgs(...)`. |
+| 3 | Read back `certificates(hash).status` after issuance | **Resolved** — starts at `PENDING_STORAGE` (enum index 0), confirmed by Kartik's Week 5 implementation. |
+| 4 | Issuance event | **Resolved** — `CertificateIssued(bytes32 indexed certificateHash, address indexed issuer, string ipfsCid, uint256 issuedAt)`, confirmed by Kartik's Week 5 implementation. |
 
-### 2. Duplicate prevention
+### 2. Duplicate prevention — still a placeholder
 
 | # | Case | Expected behaviour |
 |---|---|---|
-| 1 | Call `issueCertificate` twice with the same `certificateHash` | Second call reverts with the contract's own `CertificateAlreadyExists(certificateHash)` custom error (already declared on the Week 3 skeleton) |
+| 1 | Call `issueCertificate` twice with the same `certificateHash` | Second call reverts with the contract's own `CertificateAlreadyExists(certificateHash)` custom error |
 | 2 | Call `issueCertificate` with two different hashes from the same caller | Both calls succeed independently; no cross-contamination between entries in the `certificates` mapping |
 
-### 3. Access control
+The revert path is actually implemented on the Week 5 contract now too, so these cases could become
+real tests — deliberately left as placeholders this week since the task was scoped to hash/CID
+storage and event-emission checks only, not duplicate prevention.
+
+### 3. Access control — still a placeholder
 
 | # | Case | Expected behaviour |
 |---|---|---|
-| 1 | Any address calls `issueCertificate` today (Week 3 stub) | **Known gap, not a bug to report** — the TODO explicitly defers access control to Week 4-6, so on the current skeleton this currently succeeds for any caller. Flagging this in the plan so it isn't mistaken for an oversight once real tests are written against the Week 3 code as-is. |
-| 2 | Non-issuer address calls `issueCertificate` once access control lands | **Pending** — reverts with whatever error Kartik's Week 4-6 access-control design introduces (allowlist vs. role-based; not yet decided, see open question below) |
-
-### Open questions for Kartik (blocking the real test file)
-
-1. Initial `CertificateStatus` value for a freshly issued certificate.
-2. Exact issuance event name/signature.
-3. Access-control model (owner-managed issuer allowlist vs. role-based) — determines the revert
-   error name the access-control test cases assert against.
+| 1 | Any address calls `issueCertificate` today | **Known gap, not a bug to report** — access control is a Week 6 task. |
+| 2 | Non-issuer address calls `issueCertificate` once access control lands | **Pending** — reverts with whatever error Kartik's Week 6 access-control design introduces (allowlist vs. role-based; not yet decided). |
 
 ## Next step
 
-Once Kartik answers the above and the write path lands, `placeholder.issuance.test.js` gets
-replaced case-by-case with real assertions against a deployed `SecureCredRegistry` — no case in
-this plan should stay a placeholder past the week access control ships.
+Week 6: once Kartik adds issuer-only access control, convert "2. Duplicate prevention" and
+"3. Access control" into real tests the same way "1. Valid issuance" was converted this week.
+
+## Week 5 verification
+
+`npx hardhat test` against the full contracts suite: 5 passing (4 new issuance tests + the Week 1
+toolchain smoke test), 4 pending (the still-placeholder duplicate-prevention/access-control cases).
+No regressions.
