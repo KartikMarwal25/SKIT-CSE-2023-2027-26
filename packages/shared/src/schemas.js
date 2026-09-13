@@ -67,3 +67,8 @@ export const issuanceRequestSchema = z
       }
     }
   });
+
+/** Validates the `:id` route param on GET /certificates/:id. */
+export const certificateIdParamSchema = z.object({
+  id: z.string().uuid(),
+});
