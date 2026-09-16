@@ -1,10 +1,11 @@
+import { Link } from 'react-router-dom';
 import { Card } from '../../components/Card.jsx';
 import { Table } from '../../components/Table.jsx';
 import { StateChip } from '../../components/StateChip.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 
-// Mock rows — replaced with real GET /certificates data once that endpoint
-// is implemented (Week 4+). Shape matches docs/api/certificate-endpoints.md.
+// Mock rows — replaced with real GET /certificates list data once that
+// endpoint exists. Shape matches docs/api/certificate-endpoints.md.
 const MOCK_CERTIFICATES = [
   { id: '1', title: 'Bachelor of Technology in Computer Science', holderName: 'Asha Verma', status: 'ACTIVE' },
   { id: '2', title: 'Certificate of Completion — Advanced Web Development', holderName: 'Rohan Mehta', status: 'PENDING_STORAGE' },
@@ -24,7 +25,15 @@ export function RegistryPage() {
         ) : (
           <Table
             columns={[
-              { key: 'title', label: 'Title' },
+              {
+                key: 'title',
+                label: 'Title',
+                render: (row) => (
+                  <Link to={`/app/certificate/${row.id}`} className="text-brand hover:underline">
+                    {row.title}
+                  </Link>
+                ),
+              },
               { key: 'holderName', label: 'Holder' },
               {
                 key: 'status',
