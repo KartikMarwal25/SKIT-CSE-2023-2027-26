@@ -1,19 +1,17 @@
 import { Router } from 'express';
 import { issuanceRequestSchema, certificateIdParamSchema } from '@securecred/shared';
-import { findById } from '../repositories/certificate.repo.js';
+import { getCertificateById } from '../services/certificateService.js';
 
 /**
  * POST /certificates validates the request body (per-certificateType
  * attribute shapes included) and returns 400 with field-level errors on a
  * bad payload. A valid payload still gets 501 — the actual write (hash,
  * persist, allocate certificate number) is wired to a real service once the
- * L3/L4 boundary lands (Week 6), not this week.
+ * L3/L4 boundary lands (Week 6+), not this week.
  *
- * GET /certificates/:id is real this week: it returns the certificate's
- * metadata from the database. Blockchain-derived fields (txHash, ipfsCid)
- * aren't part of this response yet — nothing writes them until the chain
- * adapter exists (much later than Week 5) — so this only returns what the
- * DB actually knows.
+ * GET /certificates/:id now goes through certificateService.js (L3) instead
+ * of calling the repository directly — routes stay L1, repositories stay
+ * L5, per docs/architecture/layers.md.
  */
 export function createCertificatesRouter() {
   const router = Router();
@@ -32,7 +30,7 @@ export function createCertificatesRouter() {
       });
       return;
     }
-    res.status(501).json({ status: 'error', code: 'E_NOT_IMPLEMENTED', message: 'Issuance service lands in Week 6.' });
+    res.status(501).json({ status: 'error', code: 'E_NOT_IMPLEMENTED', message: 'Issuance service lands in a later week.' });
   });
 
   router.get('/:id', async (req, res) => {
@@ -42,27 +40,20 @@ export function createCertificatesRouter() {
       return;
     }
 
-    const certificate = await findById(paramResult.data.id);
-    if (!certificate) {
-      res.status(404).json({ status: 'error', code: 'E_NOT_FOUND', message: 'No certificate found with that id.' });
-      return;
+    // Express 4 does not auto-catch a rejected promise from an async
+    // handler — an unhandled DB error here would otherwise hang the
+    // request instead of responding. Caught explicitly until the app
+    // upgrades to Express 5 (or gets a shared async-handler wrapper).
+    try {
+      const certificate = await getCertificateById(paramResult.data.id);
+      if (!certificate) {
+        res.status(404).json({ status: 'error', code: 'E_NOT_FOUND', message: 'No certificate found with that id.' });
+        return;
+      }
+      res.status(200).json(certificate);
+    } catch {
+      res.status(500).json({ status: 'error', code: 'E_INTERNAL', message: 'Something went wrong looking up that certificate.' });
     }
-
-    // `status` here is the certificate's own lifecycle state, not the
-    // envelope's success/error marker — success is the 200 itself. Matches
-    // the shape in docs/api/certificate-endpoints.md.
-    res.status(200).json({
-      certificateId: certificate.certificate_id,
-      certificateNumber: certificate.certificate_number,
-      title: certificate.title,
-      certificateType: certificate.certificate_type,
-      issueDate: certificate.issue_date,
-      status: certificate.status,
-      holderName: certificate.holder_name,
-      holderEmail: certificate.holder_email,
-      certificateHash: certificate.certificate_hash,
-      attributes: certificate.attributes,
-    });
   });
 
   return router;
