@@ -5,9 +5,9 @@
  */
 export function NavShell({ children }) {
   return (
-    <header className="flex min-h-[64px] items-center justify-between border-b border-edge bg-paper px-24">
+    <header className="flex min-h-[64px] flex-wrap items-center justify-between gap-8 border-b border-edge bg-paper px-16 py-8 sm:px-24">
       <span className="text-[18px] font-bold text-ink">SecureCred</span>
-      <nav className="flex items-center gap-16">{children}</nav>
+      <nav className="flex flex-wrap items-center gap-16">{children}</nav>
     </header>
   );
 }
