@@ -1,11 +1,10 @@
 /**
- * Express app factory. L1 (routes) entry point. Middleware (L2), request
- * validation, and error handling are scaffolded once there's more than one
- * feature route to share them across.
+ * Express app factory. L1 (routes) entry point.
  */
 import express from 'express';
 import { createHealthRouter } from './routes/health.routes.js';
 import { createCertificatesRouter } from './routes/certificates.routes.js';
+import { errorHandler } from './middleware/error-handler.mw.js';
 
 export function createApp() {
   const app = express();
@@ -13,6 +12,7 @@ export function createApp() {
   app.use(express.json());
   app.use('/api/v1/health', createHealthRouter());
   app.use('/api/v1/certificates', createCertificatesRouter());
+  app.use(errorHandler);
 
   return app;
 }
