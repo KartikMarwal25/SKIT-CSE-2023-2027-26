@@ -5,12 +5,25 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 /**
- * Kartik's Week 6 contract adds issuer-only access control, so the fixture
- * now registers `issuer` before every test that calls issueCertificate —
- * without that, every "1. Valid issuance" test from Week 5 would start
- * reverting with NotIssuer. "3. Access control" is real this week.
- * "2. Duplicate prevention" stays a placeholder — still out of this week's
- * scope (edge-case input/gas/re-entrancy checks).
+ * Week 7 finding, from running this suite end-to-end against a real Ganache
+ * instance (`npx hardhat test --network ganache`) instead of Hardhat's own
+ * network: every `revertedWithCustomError` assertion in "3. Access control"
+ * failed there, even though the underlying contract behaviour is correct.
+ *
+ * Root cause: those assertions called the state-changing method directly
+ * (e.g. `registry.connect(stranger).issueCertificate(...)`), which goes
+ * through `eth_estimateGas` before sending. Ganache's `eth_estimateGas`
+ * error on a revert doesn't carry the ABI-encoded revert data the way
+ * Hardhat's own network's does, so chai-matchers has nothing to decode the
+ * specific custom error from — it fails with a generic ProviderError
+ * instead of matching NotIssuer/NotOwner/ZeroAddress.
+ *
+ * Fix: call `.staticCall(...)` on the method for every assertion that
+ * expects a revert. `.staticCall` goes through `eth_call`, not
+ * `eth_estimateGas` — Ganache's `eth_call` DOES return proper revert data,
+ * so the same assertion now decodes correctly on both networks. Verified
+ * with both `npx hardhat test` (default network) and
+ * `npx hardhat test --network ganache` — all pass on both.
  */
 describe('Certificate issuance', () => {
   async function deployFixture() {
@@ -78,7 +91,7 @@ describe('Certificate issuance', () => {
   describe('3. Access control', () => {
     it('a non-issuer calling issueCertificate reverts with NotIssuer', async () => {
       const { registry, stranger } = await deployFixture();
-      await expect(registry.connect(stranger).issueCertificate(hashOf('cert-5'), CID))
+      await expect(registry.connect(stranger).issueCertificate.staticCall(hashOf('cert-5'), CID))
         .to.be.revertedWithCustomError(registry, 'NotIssuer')
         .withArgs(stranger.address);
     });
@@ -86,31 +99,29 @@ describe('Certificate issuance', () => {
     it('the owner itself cannot issue unless separately registered as an issuer', async () => {
       const { registry, owner } = await deployFixture();
       expect(await registry.isIssuer(owner.address)).to.equal(false);
-      await expect(registry.connect(owner).issueCertificate(hashOf('cert-6'), CID))
+      await expect(registry.connect(owner).issueCertificate.staticCall(hashOf('cert-6'), CID))
         .to.be.revertedWithCustomError(registry, 'NotIssuer')
         .withArgs(owner.address);
     });
 
     it('a non-owner calling registerIssuer reverts with NotOwner', async () => {
       const { registry, stranger } = await deployFixture();
-      await expect(registry.connect(stranger).registerIssuer(stranger.address)).to.be.revertedWithCustomError(
-        registry,
-        'NotOwner',
-      );
+      await expect(
+        registry.connect(stranger).registerIssuer.staticCall(stranger.address),
+      ).to.be.revertedWithCustomError(registry, 'NotOwner');
     });
 
     it('registerIssuer(address(0)) reverts with ZeroAddress', async () => {
       const { registry, owner } = await deployFixture();
-      await expect(registry.connect(owner).registerIssuer(ethers.ZeroAddress)).to.be.revertedWithCustomError(
-        registry,
-        'ZeroAddress',
-      );
+      await expect(
+        registry.connect(owner).registerIssuer.staticCall(ethers.ZeroAddress),
+      ).to.be.revertedWithCustomError(registry, 'ZeroAddress');
     });
 
     it('after deregisterIssuer, that address can no longer issue', async () => {
       const { registry, owner, issuer } = await deployFixture();
       await registry.connect(owner).deregisterIssuer(issuer.address);
-      await expect(registry.connect(issuer).issueCertificate(hashOf('cert-7'), CID))
+      await expect(registry.connect(issuer).issueCertificate.staticCall(hashOf('cert-7'), CID))
         .to.be.revertedWithCustomError(registry, 'NotIssuer')
         .withArgs(issuer.address);
     });
