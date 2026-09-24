@@ -2,10 +2,18 @@ import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { createCertificatesRouter } from './certificates.routes.js';
+import { errorHandler } from '../middleware/error-handler.mw.js';
 
+// error-handler.mw.js must be mounted for AppError to reach the client as
+// JSON at all — without it, Express's own default handler takes over and
+// returns an HTML error page instead. Kavish's Week 4 version of this file
+// predates that change; updated here since it's a direct, unavoidable
+// consequence of this week's AppError refactor, not a scope change to his
+// test cases themselves.
 const app = express();
 app.use(express.json());
 app.use('/api/v1/certificates', createCertificatesRouter());
+app.use(errorHandler);
 
 const VALID_PAYLOAD = {
   holderName: 'Asha Verma',
