@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '../../components/Card.jsx';
 import { StateChip } from '../../components/StateChip.jsx';
+import { Skeleton } from '../../components/Skeleton.jsx';
 
 /**
  * Status, hash, and (once storage completes) CID — no raw ledger-telemetry
@@ -46,14 +47,19 @@ export function CertificateDetailPage() {
   if (!certificate) {
     return (
       <Card>
-        <p className="text-[15px] text-faint">Loading…</p>
+        <div className="flex flex-col gap-16" aria-busy="true" aria-label="Loading certificate">
+          <Skeleton className="h-24 w-2/3" />
+          <Skeleton className="h-16 w-1/3" />
+          <Skeleton className="mt-16 h-16 w-full" />
+          <Skeleton className="h-16 w-1/2" />
+        </div>
       </Card>
     );
   }
 
   return (
     <Card>
-      <div className="flex items-start justify-between gap-16">
+      <div className="flex flex-col items-start justify-between gap-16 sm:flex-row">
         <div>
           <h1 className="text-[20px] font-bold text-ink">{certificate.title}</h1>
           <p className="mt-4 text-[14px] text-faint">{certificate.holderName}</p>
