@@ -26,10 +26,10 @@ const MOCK_CREDENTIALS = [
 export function GalleryPage() {
   return (
     <div className="min-h-screen bg-surface">
-      <header className="border-b border-edge bg-paper px-16 py-16">
+      <header className="border-b border-edge bg-paper px-16 py-16 sm:px-24">
         <h1 className="text-[20px] font-bold text-ink">Your credentials</h1>
       </header>
-      <main className="mx-auto max-w-[720px] px-16 py-24">
+      <main className="mx-auto max-w-[720px] px-16 py-24 sm:px-24">
         {MOCK_CREDENTIALS.length === 0 ? (
           <EmptyState title="No credentials yet" hint="Credentials issued to you will appear here." />
         ) : (
