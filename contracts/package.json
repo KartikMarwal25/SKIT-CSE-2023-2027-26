@@ -5,6 +5,8 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "test:ganache": "hardhat test --network ganache",
+    "coverage": "hardhat coverage",
     "ganache": "ganache --port 7545 --deterministic"
   },
   "devDependencies": {
