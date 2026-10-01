@@ -7,28 +7,28 @@ import { Skeleton } from '../../components/Skeleton.jsx';
 /**
  * Status, hash, and (once storage completes) CID — no raw ledger-telemetry
  * panel here (no gas figures, no block explorer links, no event log dump).
- * Fetches the real GET /certificates/:id endpoint Jaideep wired this week.
+ * Fetches the real GET /certificates/:id endpoint Jaideep wired in Week 5.
  */
 export function CertificateDetailPage() {
   const { id } = useParams();
   const [certificate, setCertificate] = useState(null);
-  const [notFound, setNotFound] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     setCertificate(null);
-    setNotFound(false);
+    setErrorMessage(null);
 
     fetch(`/api/v1/certificates/${id}`)
-      .then((res) => {
-        if (res.status === 404) {
-          if (!cancelled) setNotFound(true);
-          return null;
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok) {
+          // Any non-2xx — not just 404 — is an error, including 400 for a
+          // malformed id (the mock registry's ids aren't real UUIDs yet).
+          if (!cancelled) setErrorMessage(body.message ?? 'Could not load this certificate.');
+          return;
         }
-        return res.json();
-      })
-      .then((body) => {
-        if (!cancelled && body) setCertificate(body);
+        if (!cancelled) setCertificate(body);
       });
 
     return () => {
@@ -36,10 +36,10 @@ export function CertificateDetailPage() {
     };
   }, [id]);
 
-  if (notFound) {
+  if (errorMessage) {
     return (
       <Card>
-        <p className="text-[15px] text-faint">No certificate found with that id.</p>
+        <p className="text-[15px] text-faint">{errorMessage}</p>
       </Card>
     );
   }
