@@ -3,10 +3,11 @@ pragma solidity 0.8.36;
 
 /// @title SecureCredRegistry
 /// @notice Stores the SHA-256 hash + IPFS CID of an issued certificate,
-/// emits an event for the worker listener, and now restricts issuance to
-/// owner-registered issuers. Under review: whether the full 7-state status
-/// model belongs on-chain at all, or just the terminal ACTIVE/REVOKED
-/// distinction, once the backend's own lifecycle service is built out.
+/// emits an event for the worker listener, restricts issuance to
+/// owner-registered issuers, and now exposes verifyCertificate(). Under
+/// review: whether the full 7-state status model belongs on-chain at all,
+/// or just the terminal ACTIVE/REVOKED distinction, once the backend's own
+/// lifecycle service is built out.
 contract SecureCredRegistry {
     enum CertificateStatus {
         PENDING_STORAGE,
@@ -16,6 +17,16 @@ contract SecureCredRegistry {
         REVOKING,
         REVOKED,
         FAILED
+    }
+
+    /// @notice The four SRS verification outcomes (FR-VER-003). See
+    /// verifyCertificate()'s NatSpec for which of these this contract can
+    /// actually produce today versus which are structurally deferred.
+    enum VerificationOutcome {
+        VERIFIED,
+        REVOKED,
+        TAMPERED,
+        NOT_FOUND
     }
 
     struct Certificate {
@@ -98,5 +109,34 @@ contract SecureCredRegistry {
         });
 
         emit CertificateIssued(certificateHash, msg.sender, ipfsCid, block.timestamp);
+    }
+
+    /// @notice Looks up a certificate by its hash and reports one of the four
+    /// FR-VER-003 outcomes.
+    ///
+    /// Only VERIFIED and NOT_FOUND are actually reachable from this contract
+    /// today:
+    /// - REVOKED requires a revoke function, which doesn't exist yet (a
+    ///   later Sprint task) — nothing can ever set a certificate revoked, so
+    ///   this branch is dead code until then, kept here so the enum shape
+    ///   the API/frontend build against doesn't have to change later.
+    /// - TAMPERED is structurally unreachable from an on-chain lookup keyed
+    ///   by hash: a tampered document produces a hash that was never
+    ///   anchored, which looks identical to "never issued at all" from this
+    ///   function's point of view. Detecting tampering requires comparing a
+    ///   freshly-computed hash against the ORIGINAL hash for a given
+    ///   certificate NUMBER — an off-chain comparison the API layer must do
+    ///   once a document-upload verification flow exists (not this week's
+    ///   scope — see UX-OPEN-3, and Keshav's Week 9 identifier-only
+    ///   verifier portal).
+    ///
+    /// @param certificateHash Keccak-256 fingerprint to look up.
+    /// @return outcome One of VerificationOutcome's four values.
+    function verifyCertificate(bytes32 certificateHash) external view returns (VerificationOutcome outcome) {
+        Certificate storage cert = certificates[certificateHash];
+        if (cert.issuedAt == 0) {
+            return VerificationOutcome.NOT_FOUND;
+        }
+        return VerificationOutcome.VERIFIED;
     }
 }
