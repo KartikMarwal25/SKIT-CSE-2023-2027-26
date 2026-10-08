@@ -4,7 +4,8 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" }
+    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" },
+    { "key": "bearerToken", "value": "" }
   ],
   "item": [
     {
@@ -12,6 +13,23 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Auth - Me (no token, expect 401)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/me"
+      }
+    },
+    {
+      "name": "Auth - Me (with token)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/me",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{bearerToken}}" }
+        ]
       }
     }
   ]
