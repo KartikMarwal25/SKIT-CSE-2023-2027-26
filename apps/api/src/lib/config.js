@@ -16,4 +16,5 @@ export const config = Object.freeze({
   databaseUrl:
     process.env.DATABASE_URL ||
     'postgres://securecred_app:securecred_dev_password@localhost:5432/securecred',
+  clerkSecretKey: process.env.CLERK_SECRET_KEY || null,
 });
