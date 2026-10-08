@@ -5,11 +5,16 @@ import { RegistryPage } from './pages/institution/RegistryPage.jsx';
 import { CertificateDetailPage } from './pages/institution/CertificateDetailPage.jsx';
 import { GalleryPage } from './pages/student/GalleryPage.jsx';
 import { SharePanelPage } from './pages/student/SharePanelPage.jsx';
+import { VerifyEntryPage } from './pages/public/VerifyEntryPage.jsx';
+import { VerifyOutcomePage } from './pages/public/VerifyOutcomePage.jsx';
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/verify" element={<VerifyEntryPage />} />
+        <Route path="/verify/:certificateNumber" element={<VerifyOutcomePage />} />
+
         <Route path="/app" element={<InstitutionLayout />}>
           <Route index element={<Navigate to="registry" replace />} />
           <Route path="registry" element={<RegistryPage />} />
