@@ -1,10 +1,15 @@
+
 import js from '@eslint/js';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 const NODE_GLOBALS = {
   process: 'readonly',
   console: 'readonly',
   Buffer: 'readonly',
+  global: 'readonly',
+  File: 'readonly',
+  TextEncoder: 'readonly',
   setInterval: 'readonly',
   clearInterval: 'readonly',
   setTimeout: 'readonly',
@@ -61,6 +66,7 @@ const MOCHA_GLOBALS = {
 
 export default [
   js.configs.recommended,
+
   {
     ignores: [
       '**/node_modules/**',
@@ -72,20 +78,30 @@ export default [
       'weekly-work/**',
     ],
   },
+
   {
     files: ['**/*.js', '**/*.jsx'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
-      parserOptions: { ecmaFeatures: { jsx: true } },
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
       globals: NODE_GLOBALS,
     },
     rules: {
       'no-var': 'error',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
+
   {
     files: ['apps/api/src/**/*.js', 'apps/worker/src/**/*.js'],
     ignores: [
@@ -99,29 +115,54 @@ export default [
         'error',
         {
           paths: [
-            { name: 'pg', message: 'Only modules under repositories/ (or the composition root) may import pg (rule D3).' },
-            { name: 'ethers', message: 'Only chain.adapter.js may import ethers (rule D4).' },
+            {
+              name: 'pg',
+              message:
+                'Only modules under repositories/ (or the composition root) may import pg (rule D3).',
+            },
+            {
+              name: 'ethers',
+              message:
+                'Only chain.adapter.js may import ethers (rule D4).',
+            },
           ],
         },
       ],
     },
   },
+
   {
     files: ['apps/web/src/**/*.jsx', 'apps/web/src/**/*.js'],
-    plugins: { 'react-hooks': reactHooks },
-    languageOptions: { globals: BROWSER_GLOBALS },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+    },
+    languageOptions: {
+      globals: BROWSER_GLOBALS,
+    },
     rules: {
+      'react/jsx-uses-vars': 'error',
       'react-hooks/exhaustive-deps': 'error',
       'react-hooks/rules-of-hooks': 'error',
       'no-console': 'error',
     },
   },
+
   {
     files: ['contracts/**/*.js'],
-    languageOptions: { sourceType: 'commonjs', globals: COMMONJS_GLOBALS },
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: COMMONJS_GLOBALS,
+    },
   },
+
   {
     files: ['contracts/test/**/*.js'],
-    languageOptions: { globals: { ...COMMONJS_GLOBALS, ...MOCHA_GLOBALS } },
+    languageOptions: {
+      globals: {
+        ...COMMONJS_GLOBALS,
+        ...MOCHA_GLOBALS,
+      },
+    },
   },
 ];
