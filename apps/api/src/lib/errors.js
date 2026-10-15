@@ -12,10 +12,11 @@ export class AppError extends Error {
    *   must never embed secrets, stack traces, or internal identifiers.
    * @param {object} [options]
    * @param {number} [options.status] - HTTP status override (defaults to ERROR_STATUS[code] or 500).
+   * @param {unknown} [options.cause] - The underlying error, if any. Server-side only (logs), never sent to clients.
    * @param {Array<{path:string, message:string}>} [options.fields] - Field-level validation errors, safe to send.
    */
   constructor(code, message, options = {}) {
-    super(message);
+    super(message, options.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = 'AppError';
     this.code = code;
     this.status = options.status ?? ERROR_STATUS[code] ?? 500;
@@ -26,8 +27,9 @@ export class AppError extends Error {
 
 /**
  * Converts any thrown error into the minimal shape allowed across the wire.
- * A correlation id isn't part of this yet — no request-id middleware exists
- * in this build — so this stays a smaller shape than the eventual one.
+ * `cause` is deliberately never included — server logs only. A correlation
+ * id isn't part of this yet — no request-id middleware exists in this build
+ * — so this stays a smaller shape than the eventual one.
  *
  * @param {unknown} err - The caught error (AppError or otherwise).
  * @returns {{status:'error', code:string, message:string, fields?:Array}}
