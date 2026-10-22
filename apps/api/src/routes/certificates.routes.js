@@ -2,16 +2,17 @@ import { Router } from 'express';
 import { issuanceRequestSchema, certificateIdParamSchema } from '@securecred/shared';
 import { getCertificateById } from '../services/certificateService.js';
 import { AppError } from '../lib/errors.js';
+import { issuancePerHour } from '../middleware/rateLimits.js';
 
 /**
  * Every failure here goes through AppError + next(err), so error-handler.mw.js
- * is the single place that turns a domain failure into a wire response — no
- * more routes building their own {status:'error',...} object by hand.
+ * is the single place that turns a domain failure into a wire response.
+ * POST / is rate-limited per DP-02 (60/hr per institution) as of this week.
  */
 export function createCertificatesRouter() {
   const router = Router();
 
-  router.post('/', (req, res, next) => {
+  router.post('/', issuancePerHour, (req, res, next) => {
     const result = issuanceRequestSchema.safeParse(req.body);
     if (!result.success) {
       next(
