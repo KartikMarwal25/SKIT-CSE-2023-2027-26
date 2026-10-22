@@ -94,4 +94,28 @@ describe('pinata.adapter — fetchByCid() gateway failover (DP-03, mocked fetch)
     await expect(adapter.fetchByCid('bafybeigdyrztest')).rejects.toMatchObject({ code: 'E_IPFS_UNAVAILABLE' });
     expect(global.fetch).toHaveBeenCalledTimes(3);
   });
+
+  it('keeps the failover order correct across 50 concurrent lookups (simulated load)', async () => {
+    // Every call: gateway 1 fails, gateway 2 succeeds. Fired concurrently
+    // (not awaited one at a time) to prove the per-call gateway loop
+    // doesn't share state across in-flight calls — each fetchByCid() call
+    // gets its own local loop variable, so nothing here can cross-contaminate.
+    global.fetch.mockImplementation((url) => {
+      if (url.startsWith(GATEWAYS[0])) return Promise.reject(new Error('gateway 1 down'));
+      if (url.startsWith(GATEWAYS[1])) {
+        return Promise.resolve({ ok: true, arrayBuffer: async () => new TextEncoder().encode('ok').buffer });
+      }
+      return Promise.resolve({ ok: false });
+    });
+    const adapter = createPinataAdapter({ config: { ...BASE_CONFIG, ipfsGateways: GATEWAYS } });
+
+    const results = await Promise.all(
+      Array.from({ length: 50 }, (_, i) => adapter.fetchByCid(`cid-${i}`)),
+    );
+
+    expect(results).toHaveLength(50);
+    expect(results.every((r) => Buffer.from(r).toString() === 'ok')).toBe(true);
+    // 50 calls x 2 gateways attempted each (1 fails, 2 succeeds) = 100 fetches.
+    expect(global.fetch).toHaveBeenCalledTimes(100);
+  });
 });
