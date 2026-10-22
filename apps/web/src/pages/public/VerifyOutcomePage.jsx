@@ -51,6 +51,18 @@ export function VerifyOutcomePage() {
           <p className="text-[16px] font-bold">{copy.heading}</p>
           <p className="mt-8 text-[14px]">{copy.detail}</p>
         </div>
+
+        {/* AD-05/UI-07 — mandatory on every outcome, not just this one, so
+            it can never be mistaken for something specific to a bad result
+            (the F-1 pitfall: implying the system vouches for the academic
+            claim itself, not just the document's authenticity). */}
+        <p className="mt-16 text-[12px] leading-[18px] text-faint">
+          This check confirms whether the certificate document is authentic and unaltered, and
+          whether it has been revoked. It does not evaluate or vouch for the academic claim itself
+          — the grades, honours, or completion status printed on the document remain the issuing
+          institution's own record, not something this system independently assesses.
+        </p>
+
         <Link to="/verify" className="mt-16 inline-block text-[14px] text-brand hover:underline">
           Check another certificate
         </Link>
