@@ -1,5 +1,5 @@
 {
-  "address": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
+  "address": "0xc0b3B62DD0400E4baa721DdEc9B8A384147b23fF",
   "abi": [
     {
       "inputs": [],
@@ -14,7 +14,34 @@
           "type": "bytes32"
         }
       ],
+      "name": "AlreadyRevoked",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certificateHash",
+          "type": "bytes32"
+        }
+      ],
       "name": "CertificateAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certificateHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "EmptyReason",
       "type": "error"
     },
     {
@@ -67,6 +94,37 @@
         }
       ],
       "name": "CertificateIssued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certificateHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "revokedBy",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "revokedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "CertificateRevoked",
       "type": "event"
     },
     {
@@ -129,6 +187,11 @@
           "internalType": "enum SecureCredRegistry.CertificateStatus",
           "name": "status",
           "type": "uint8"
+        },
+        {
+          "internalType": "string",
+          "name": "revocationReason",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
@@ -209,10 +272,47 @@
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certificateHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        }
+      ],
+      "name": "revokeCertificate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certificateHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyCertificate",
+      "outputs": [
+        {
+          "internalType": "enum SecureCredRegistry.VerificationOutcome",
+          "name": "outcome",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     }
   ],
   "network": "ganache",
   "chainId": 1337,
-  "deployedAt": "2026-08-31T23:17:50.231Z",
+  "deployedAt": "2026-09-01T06:46:17.731Z",
   "deployerAddress": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 }
