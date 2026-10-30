@@ -33,4 +33,10 @@ export const config = Object.freeze({
   pinataGateway: process.env.PINATA_GATEWAY || null,
   ipfsGateways,
   ipfsGatewayTimeoutMs: 5000,
+  // Matches a contracts/deployments/<name>.json filename. Defaults to the
+  // local Ganache instance every dev already runs (contracts/README's
+  // `npm run ganache`) — there's no live testnet/mainnet target yet.
+  chainNetwork: process.env.CHAIN_NETWORK || 'ganache',
+  chainRpcUrl: process.env.CHAIN_RPC_URL || 'http://127.0.0.1:7545',
+  custodianPrivateKey: process.env.CUSTODIAN_PRIVATE_KEY || null,
 });
