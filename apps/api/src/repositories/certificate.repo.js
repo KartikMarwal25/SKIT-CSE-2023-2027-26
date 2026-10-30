@@ -39,6 +39,26 @@ export async function findById(certificateId) {
 }
 
 /**
+ * Looks up a certificate by its public-facing number — the lookup key the
+ * verifier portal and the revoke endpoint both use, since neither one has
+ * (or should need) the internal UUID.
+ *
+ * @param {string} certificateNumber
+ * @returns {Promise<object|undefined>} The row (with holder name/email joined in), or undefined if not found.
+ */
+export async function findByCertificateNumber(certificateNumber) {
+  const { rows } = await pool.query(
+    `SELECT ${FULL_COLUMNS_WITH_HOLDER}
+     FROM certificate c
+     JOIN student s ON s.student_id = c.student_id
+     JOIN user_account u ON u.user_id = s.user_id
+     WHERE c.certificate_number = $1`,
+    [certificateNumber],
+  );
+  return rows[0];
+}
+
+/**
  * Compare-and-set status transition. The ONLY intended caller is
  * lifecycleService.js (ADR-009, rule D5) — every other module that needs a
  * certificate's status to change goes through lifecycleService.transition()
