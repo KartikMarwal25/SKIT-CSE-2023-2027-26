@@ -72,3 +72,25 @@ export const issuanceRequestSchema = z
 export const certificateIdParamSchema = z.object({
   id: z.string().uuid(),
 });
+
+/** Certificate number format: <INSTITUTION_CODE>-<YYYY>-<12-char Crockford Base32> (DP-01). */
+export const certificateNumberSchema = z
+  .string()
+  .regex(
+    /^[A-Z0-9]{3,8}-\d{4}-[0-9A-HJKMNP-TV-Z]{12}$/,
+    'This does not look like a SecureCred certificate identifier.',
+  );
+
+/** Validates the `:certificateNumber` route param on GET /certificates/verify/:certificateNumber. */
+export const certificateNumberParamSchema = z.object({
+  certificateNumber: certificateNumberSchema,
+});
+
+/** Validates POST /certificates/:id/revoke's request body. */
+export const revocationRequestSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Explain why this credential is being revoked (10-160 characters).')
+    .max(160, 'Explain why this credential is being revoked (10-160 characters).'),
+});
