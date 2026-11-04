@@ -7,13 +7,16 @@
     "test": "hardhat test",
     "test:ganache": "hardhat test --network ganache",
     "coverage": "hardhat coverage",
-    "ganache": "ganache --port 7545 --deterministic"
+    "ganache": "ganache --port 7545 --deterministic",
+    "deploy:ganache": "hardhat run scripts/deploy.js --network ganache",
+    "deploy:amoy": "hardhat run scripts/deploy.js --network amoy"
   },
   "devDependencies": {
     "hardhat": "^2.22.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "chai": "^4.4.0",
     "mocha": "^10.4.0",
-    "ganache": "^7.9.0"
+    "ganache": "^7.9.0",
+    "dotenv": "^16.4.0"
   }
 }
