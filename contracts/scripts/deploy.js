@@ -4,10 +4,9 @@ const path = require('path');
 const hre = require('hardhat');
 
 /**
- * Deploys SecureCredRegistry to the network selected via `--network <name>`
- * and records the resulting deployment (address + ABI + metadata) under
- * contracts/deployments/ — this is how the ABI gets published for whoever
- * consumes it next (the API's future chain adapter, not built yet).
+ * Deploys SecureCredRegistry to the network selected via `--network <name>`,
+ * optionally registers a custodian address as an issuer, and records the
+ * resulting deployment (address + ABI + metadata) under contracts/deployments/.
  */
 async function main() {
   const network = hre.network.name;
@@ -22,6 +21,21 @@ async function main() {
 
   const address = await registry.getAddress();
   console.log(`SecureCredRegistry deployed at ${address}`);
+
+  // On a real network (Amoy/mainnet) the deployer usually IS the custodian —
+  // registering it as an issuer immediately avoids a manual follow-up
+  // transaction before the API can issue anything. Skipped locally (Ganache/
+  // Hardhat) unless explicitly requested, since local test flows already
+  // register their own issuer addresses per-test.
+  const custodianAddress = process.env.CUSTODIAN_ADDRESS;
+  if (custodianAddress) {
+    console.log(`Registering custodian address ${custodianAddress} as issuer...`);
+    const tx = await registry.registerIssuer(custodianAddress);
+    await tx.wait();
+    console.log(`Issuer registered: ${custodianAddress}`);
+  } else {
+    console.log('CUSTODIAN_ADDRESS not set — skipping issuer registration.');
+  }
 
   const artifact = await hre.artifacts.readArtifact('SecureCredRegistry');
 
