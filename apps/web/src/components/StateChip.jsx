@@ -1,9 +1,11 @@
 const TONE_BY_STATE = {
   ACTIVE: 'bg-ok-bg text-ok',
+  VERIFIED: 'bg-ok-bg text-ok',
   REVOKED: 'bg-bad-bg text-bad',
+  TAMPERED: 'bg-bad-bg text-bad',
   FAILED: 'bg-bad-bg text-bad',
 };
-const DEFAULT_TONE = 'bg-surface text-faint'; // in-progress states (PENDING_*, ANCHORING, REVOKING)
+const DEFAULT_TONE = 'bg-surface text-faint'; // in-progress lifecycle states, or NOT_FOUND
 
 export function StateChip({ state }) {
   return (
