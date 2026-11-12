@@ -11,6 +11,7 @@ import {
   verifyCertificateByNumber,
   revokeCertificateByNumber,
 } from '../services/certificateService.js';
+import { issueCertificate } from '../services/issuanceService.js';
 import { AppError } from '../lib/errors.js';
 import { issuancePerHour, verifyPerMinute, verifyPerHour, revokePerHour } from '../middleware/rateLimits.js';
 
@@ -18,16 +19,15 @@ import { issuancePerHour, verifyPerMinute, verifyPerHour, revokePerHour } from '
  * Every failure here goes through AppError + next(err), so error-handler.mw.js
  * is the single place that turns a domain failure into a wire response.
  *
- * GET /verify/:certificateNumber and POST /:certificateNumber/revoke are new
- * this week — both go through chainAdapter (L4), never touching 'ethers'
- * themselves (rule D4). Contract-level errors from a failed revoke are
- * already mapped to this app's error catalogue inside chain.adapter.js —
- * this route only has to next() them.
+ * POST / now actually submits an on-chain transaction via issuanceService.js
+ * (chainAdapter, L4) instead of always responding 501 — see that service's
+ * own header comment for exactly what's still missing (DB persistence,
+ * real PDF hashing).
  */
 export function createCertificatesRouter({ chainAdapter, requireAuth }) {
   const router = Router();
 
-  router.post('/', issuancePerHour, (req, res, next) => {
+  router.post('/', issuancePerHour, async (req, res, next) => {
     const result = issuanceRequestSchema.safeParse(req.body);
     if (!result.success) {
       next(
@@ -37,7 +37,13 @@ export function createCertificatesRouter({ chainAdapter, requireAuth }) {
       );
       return;
     }
-    next(new AppError('E_NOT_IMPLEMENTED', 'Issuance service lands in a later week.'));
+
+    try {
+      const issued = await issueCertificate(result.data, chainAdapter);
+      res.status(202).json({ ...issued, status: 'PENDING_ANCHOR' });
+    } catch (err) {
+      next(err);
+    }
   });
 
   router.get('/verify/:certificateNumber', verifyPerMinute, verifyPerHour, async (req, res, next) => {
