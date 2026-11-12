@@ -21,16 +21,16 @@ const INITIAL_FORM = {
 };
 
 /**
- * Wired to the real POST /certificates validation this week (Jaideep's
- * issuanceRequestSchema) — server-side field errors surface inline.
- * holderEmail is marked mandatory: it's the AD-06 matching key the backend
- * uses to find or create the student's account (FR-ISS-001), so nothing
- * else in this form should be allowed to omit it.
+ * Wired to the real POST /certificates endpoint — as of this week it
+ * actually submits an on-chain transaction (Jaideep's issuanceService.js)
+ * instead of always responding 501, so a successful submit now has a real
+ * transaction to show status for.
  */
 export function IssuePage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [status, setStatus] = useState('idle'); // idle | submitting | error | not-implemented
+  const [status, setStatus] = useState('idle'); // idle | submitting | error | submitted
+  const [submitted, setSubmitted] = useState(null); // { certificateNumber, txHash, status } once real
 
   const setField = (key) => (event) => setForm({ ...form, [key]: event.target.value });
 
@@ -38,6 +38,7 @@ export function IssuePage() {
     event.preventDefault();
     setStatus('submitting');
     setFieldErrors({});
+    setSubmitted(null);
 
     const res = await fetch('/api/v1/certificates', {
       method: 'POST',
@@ -55,9 +56,13 @@ export function IssuePage() {
       setStatus('error');
       return;
     }
-    // The issuance service itself isn't implemented until Week 6 — a valid
-    // payload still comes back 501 today, which is expected, not a bug.
-    setStatus('not-implemented');
+    if (!res.ok) {
+      setStatus('error');
+      return;
+    }
+
+    setSubmitted(body);
+    setStatus('submitted');
   };
 
   return (
@@ -122,14 +127,36 @@ export function IssuePage() {
           error={fieldErrors.issueDate}
         />
 
-        {status === 'not-implemented' ? (
-          <p className="text-[13px] text-faint">Validated — issuance itself isn't wired up yet (lands Week 6).</p>
+        {status === 'error' && !Object.keys(fieldErrors).length ? (
+          <p className="text-[13px] text-bad">Something went wrong submitting the on-chain transaction. Try again.</p>
         ) : null}
 
         <Button type="submit" disabled={status === 'submitting'}>
-          Issue credential
+          {status === 'submitting' ? 'Submitting…' : 'Issue credential'}
         </Button>
       </form>
+
+      {submitted ? (
+        <div className="mt-24 rounded border border-edge bg-surface p-16">
+          <p className="text-[13px] font-bold uppercase text-faint">Transaction submitted</p>
+          <dl className="mt-8 flex flex-col gap-8">
+            <div>
+              <dt className="text-[12px] text-faint">Certificate number</dt>
+              <dd className="font-mono text-[14px] text-body">{submitted.certificateNumber}</dd>
+            </div>
+            <div>
+              <dt className="text-[12px] text-faint">Transaction hash</dt>
+              <dd className="break-all font-mono text-[14px] text-body">{submitted.txHash}</dd>
+            </div>
+            <div>
+              <dt className="text-[12px] text-faint">Status</dt>
+              <dd className="text-[14px] text-body">
+                {submitted.status} — waiting for block confirmation before this becomes ACTIVE.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
     </Card>
   );
 }
