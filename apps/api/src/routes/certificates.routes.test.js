@@ -8,16 +8,13 @@ import { AppError } from '../lib/errors.js';
 // JSON at all — without it, Express's own default handler takes over and
 // returns an HTML error page instead.
 //
-// createCertificatesRouter() now requires { chainAdapter, requireAuth } —
-// a direct, unavoidable consequence of wiring the verify/revoke routes to
-// chain.adapter.js this week. Both are stand-ins here: chainAdapter is a
-// jest.fn()-backed mock (this file tests the ROUTE's error-mapping
-// behaviour, not chain.adapter.js's own custom-error decoding — that's
-// covered separately once a dedicated chain.adapter revoke test exists),
-// and requireAuth is a fake middleware that trusts an `x-test-role` header
-// instead of doing real Clerk verification, since nothing here is testing
-// authentication itself.
+// chainAdapter is a jest.fn()-backed mock throughout this file — no real
+// on-chain transaction is submitted by these tests, only the route's own
+// wiring/error-mapping behaviour is exercised. requireAuth is a fake
+// middleware that trusts an `x-test-role` header instead of doing real
+// Clerk verification, since nothing here is testing authentication itself.
 const chainAdapter = {
+  issueCertificate: jest.fn(),
   verifyCertificate: jest.fn(),
   revokeCertificate: jest.fn(),
 };
@@ -55,11 +52,17 @@ const VALID_PAYLOAD = {
 
 const CERT_NUMBER = 'SKIT-2026-000000000001';
 
-describe('POST /certificates — validation (issuanceRequestSchema)', () => {
-  it('1. valid issuance path — a well-formed payload passes validation (501, not yet implemented)', async () => {
+describe('POST /certificates', () => {
+  it('1. valid issuance path — a well-formed payload submits a real on-chain transaction (mocked chainAdapter)', async () => {
+    chainAdapter.issueCertificate.mockResolvedValueOnce({ txHash: '0xabc123' });
+
     const res = await request(app).post('/api/v1/certificates').send(VALID_PAYLOAD);
-    expect(res.status).toBe(501);
-    expect(res.body.code).toBe('E_NOT_IMPLEMENTED');
+
+    expect(res.status).toBe(202);
+    expect(res.body.status).toBe('PENDING_ANCHOR');
+    expect(res.body.txHash).toBe('0xabc123');
+    expect(res.body.certificateNumber).toMatch(/^SKIT-2026-[0-9A-HJKMNP-TV-Z]{12}$/);
+    expect(chainAdapter.issueCertificate).toHaveBeenCalledWith(expect.stringMatching(/^0x[0-9a-f]{64}$/), '');
   });
 
   it('rejects a payload missing the mandatory holderEmail (FR-ISS-001 / AD-06 matching key)', async () => {
@@ -77,10 +80,18 @@ describe('POST /certificates — validation (issuanceRequestSchema)', () => {
   });
 
   it('accepts a DEGREE payload with its own cgpa attribute', async () => {
+    chainAdapter.issueCertificate.mockResolvedValueOnce({ txHash: '0xdef456' });
     const res = await request(app)
       .post('/api/v1/certificates')
       .send({ ...VALID_PAYLOAD, attributes: { cgpa: 8.7 } });
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(202);
+  });
+
+  it('propagates a failed on-chain submission as an error response', async () => {
+    chainAdapter.issueCertificate.mockRejectedValueOnce(new AppError('E_INTERNAL', 'Chain unavailable.'));
+    const res = await request(app).post('/api/v1/certificates').send(VALID_PAYLOAD);
+    expect(res.status).toBe(500);
+    expect(res.body.code).toBe('E_INTERNAL');
   });
 });
 
