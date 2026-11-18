@@ -16,6 +16,13 @@ const REPO_ROOT = path.resolve(__dirname, '../../../..');
 
 const VERIFICATION_OUTCOME_NAMES = ['VERIFIED', 'REVOKED', 'TAMPERED', 'NOT_FOUND'];
 
+// FR-VER-006: a verify call that can't reach the chain within a reasonable
+// window must fail distinctly from "we asked and got an answer" — 8s is
+// generous for a single read call (well under the 20s+ Pinata gateway
+// timeout elsewhere in this codebase, since a stalled RPC here should fail
+// fast enough for the verifier portal to show its degraded state promptly).
+const VERIFY_TIMEOUT_MS = 8000;
+
 /** Maps the contract's own custom errors to this app's error catalogue. */
 const REVOKE_ERROR_MAP = {
   NotIssuer: () => new AppError('E_FORBIDDEN', 'You are not a registered issuer.'),
@@ -35,6 +42,22 @@ const loadDeployment = (network) => {
     throw new Error(`Contract not deployed for network "${network}" — run the deploy script first.`);
   }
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+};
+
+/**
+ * Races a promise against a timeout, rejecting with a distinct error if the
+ * promise doesn't settle in time.
+ *
+ * @param {Promise<unknown>} promise
+ * @param {number} ms
+ * @returns {Promise<unknown>}
+ */
+const withTimeout = (promise, ms) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('chain call timed out')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 };
 
 /**
@@ -103,16 +126,24 @@ export const createChainAdapter = ({ network, signer }) => {
 
   /**
    * Looks up a certificate's on-chain verification outcome (FR-VER-003).
-   * Never reverts — the contract's own verifyCertificate() is a view
-   * function that always returns one of the four outcomes.
+   * The contract's own verifyCertificate() never reverts for a normal
+   * lookup — but the RPC call itself can still fail or hang if the chain is
+   * unreachable, which is exactly what FR-VER-006's degraded state is for.
+   * That failure is surfaced as a distinct, mapped error rather than an
+   * unhandled rejection.
    *
    * @param {string} certificateHash
    * @returns {Promise<'VERIFIED'|'REVOKED'|'TAMPERED'|'NOT_FOUND'>}
+   * @throws {AppError} E_CHAIN_UNAVAILABLE if the chain doesn't respond within VERIFY_TIMEOUT_MS or the call otherwise fails.
    */
   const verifyCertificate = async (certificateHash) => {
     const contract = getContract();
-    const outcome = await contract.verifyCertificate(certificateHash);
-    return VERIFICATION_OUTCOME_NAMES[Number(outcome)];
+    try {
+      const outcome = await withTimeout(contract.verifyCertificate(certificateHash), VERIFY_TIMEOUT_MS);
+      return VERIFICATION_OUTCOME_NAMES[Number(outcome)];
+    } catch (err) {
+      throw new AppError('E_CHAIN_UNAVAILABLE', 'The blockchain is not responding right now.', { cause: err });
+    }
   };
 
   /**
