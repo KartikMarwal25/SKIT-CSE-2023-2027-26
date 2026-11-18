@@ -109,6 +109,7 @@ export default [
       'apps/worker/src/worker.js',
       'apps/api/src/adapters/chain.adapter.js',
       'apps/api/src/repositories/**',
+      'apps/api/src/routes/verify.integration.test.js',
     ],
     rules: {
       'no-restricted-imports': [
