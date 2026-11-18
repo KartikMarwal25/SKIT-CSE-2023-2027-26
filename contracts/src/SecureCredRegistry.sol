@@ -29,12 +29,22 @@ contract SecureCredRegistry {
         NOT_FOUND
     }
 
+    /// @dev Field order is deliberate, not alphabetical/logical — `issuer`
+    /// (20 bytes) and `status` (1 byte, an enum backed by uint8) are placed
+    /// adjacently so the compiler packs them into a single 32-byte storage
+    /// slot instead of two. `certificateHash` and `issuedAt` each fill a
+    /// slot alone regardless of position (32 bytes each), and the two
+    /// `string` fields always get their own slot(s) via Solidity's dynamic-
+    /// type storage layout no matter where they're declared — so this is
+    /// the one reordering that actually saves anything. See
+    /// docs/GAS_PROFILE.md's "Storage packing" section for the measured
+    /// before/after.
     struct Certificate {
         bytes32 certificateHash;
-        string ipfsCid;
         address issuer;
-        uint256 issuedAt;
         CertificateStatus status;
+        uint256 issuedAt;
+        string ipfsCid;
         string revocationReason;
     }
 
@@ -120,10 +130,10 @@ contract SecureCredRegistry {
 
         certificates[certificateHash] = Certificate({
             certificateHash: certificateHash,
-            ipfsCid: ipfsCid,
             issuer: msg.sender,
-            issuedAt: block.timestamp,
             status: CertificateStatus.PENDING_STORAGE,
+            issuedAt: block.timestamp,
+            ipfsCid: ipfsCid,
             revocationReason: ''
         });
 
